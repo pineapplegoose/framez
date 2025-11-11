@@ -8,8 +8,10 @@ import {
     Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import supabase from "../../config/supabase"
+
+
+
 import { useAuth } from '../../contexts/AuthContext';
 import PostCard from '../../components/PostCard';
 
@@ -25,33 +27,68 @@ interface Post {
 export default function ProfileScreen() {
     const [posts, setPosts] = useState<Post[]>([]);
     const { user, logout } = useAuth();
+    const displayName = user?.user_metadata?.display_name || 'User';
 
     useEffect(() => {
         if (!user) return;
 
-        const q = query(
-            collection(db, 'posts'),
-            where('authorId', '==', user.uid),
-            orderBy('createdAt', 'desc')
-        );
+        const fetchUserPosts = async () => {
+            if (!supabase) {
+                return
+            }
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const postsData: Post[] = [];
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                postsData.push({
-                    id: doc.id,
-                    authorName: data.authorName,
-                    authorId: data.authorId,
-                    text: data.text || '',
-                    imageUrl: data.imageUrl,
-                    timestamp: data.createdAt
-                });
-            });
+            const { data, error } = await supabase
+                .from('posts')
+                .select('*')
+                .eq('author_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching user posts:', error);
+                return;
+            }
+
+            const postsData: Post[] = data.map((post) => ({
+                id: post.id,
+                authorName: post.author_name,
+                authorId: post.author_id,
+                text: post.text || '',
+                imageUrl: post.image_url,
+                timestamp: post.created_at,
+            }));
+
             setPosts(postsData);
-        });
+        };
 
-        return () => unsubscribe();
+        fetchUserPosts();
+        if (!supabase) {
+            return
+        }
+
+        // Subscribe to real-time changes for user's posts
+        const channel = supabase
+            .channel('user-posts')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'posts',
+                    filter: `author_id=eq.${user.id}`,
+                },
+                () => {
+                    fetchUserPosts();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            if (!supabase) {
+                return
+            }
+
+            supabase.removeChannel(channel);
+        };
     }, [user]);
 
     const handleLogout = () => {
@@ -85,10 +122,10 @@ export default function ProfileScreen() {
                         <View style={styles.profileSection}>
                             <View style={styles.avatar}>
                                 <Text style={styles.avatarText}>
-                                    {user?.displayName?.charAt(0).toUpperCase() || 'U'}
+                                    {displayName.charAt(0).toUpperCase()}
                                 </Text>
                             </View>
-                            <Text style={styles.name}>{user?.displayName || 'User'}</Text>
+                            <Text style={styles.name}>{displayName}</Text>
                             <Text style={styles.email}>{user?.email}</Text>
 
                             <View style={styles.statsContainer}>

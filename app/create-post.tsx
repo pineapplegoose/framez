@@ -14,17 +14,18 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { collection, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { useSupabase } from '@/config/useSupabase';
 import { useAuth } from '../contexts/AuthContext';
+import { decode } from 'base64-arraybuffer';
 
 export default function CreatePostScreen() {
+    const supabase = useSupabase();
     const [text, setText] = useState('');
     const [imageUri, setImageUri] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const { user } = useAuth();
     const router = useRouter();
+    const displayName = user?.user_metadata?.display_name || 'Anonymous';
 
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -40,13 +41,55 @@ export default function CreatePostScreen() {
     };
 
     const uploadImage = async (uri: string): Promise<string> => {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        const filename = `posts/${user?.uid}_${Date.now()}.jpg`;
-        const storageRef = ref(storage, filename);
+        if (!supabase) {
+            throw new Error('Supabase client not initialized');
+        }
 
-        await uploadBytes(storageRef, blob);
-        return await getDownloadURL(storageRef);
+        const fileName = `${user?.id}_${Date.now()}.jpg`;
+        const filePath = `posts/${fileName}`;
+
+        // Handle web platform differently
+        if (Platform.OS === 'web') {
+            // Fetch the blob from the URI
+            const response = await fetch(uri);
+            const blob = await response.blob();
+
+            const { data, error } = await supabase.storage
+                .from('post-images')
+                .upload(filePath, blob, {
+                    contentType: 'image/jpeg',
+                });
+
+            if (error) {
+                console.error('Upload error:', error);
+                throw error;
+            }
+        } else {
+            // For native platforms, use the legacy API
+            const { readAsStringAsync } = require('expo-file-system/legacy');
+
+            const base64 = await readAsStringAsync(uri, {
+                encoding: 'base64',
+            });
+
+            const { data, error } = await supabase.storage
+                .from('post-images')
+                .upload(filePath, decode(base64), {
+                    contentType: 'image/jpeg',
+                });
+
+            if (error) {
+                console.error('Upload error:', error);
+                throw error;
+            }
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('post-images')
+            .getPublicUrl(filePath);
+
+        console.log('Image uploaded, public URL:', publicUrl);
+        return publicUrl;
     };
 
     const handlePost = async () => {
@@ -55,25 +98,44 @@ export default function CreatePostScreen() {
             return;
         }
 
+        if (!supabase) {
+            Alert.alert('Error', 'App not ready. Please try again.');
+            return;
+        }
+
         setUploading(true);
         try {
             let imageUrl = null;
 
             if (imageUri) {
+                console.log('Uploading image...');
                 imageUrl = await uploadImage(imageUri);
+                console.log('Image URL:', imageUrl);
             }
 
-            await addDoc(collection(db, 'posts'), {
-                authorId: user?.uid,
-                authorName: user?.displayName || 'Anonymous',
+            const postData = {
+                author_id: user?.id,
+                author_name: displayName,
                 text: text.trim(),
-                imageUrl: imageUrl,
-                createdAt: new Date().toISOString()
-            });
+                image_url: imageUrl,
+                created_at: new Date().toISOString(),
+            };
 
+            console.log('Inserting post:', postData);
+
+            const { data, error } = await supabase.from('posts').insert([postData]).select();
+
+            if (error) {
+                console.error('Insert error:', error);
+                throw error;
+            }
+
+            console.log('Post created successfully:', data);
+            Alert.alert('Success', 'Post created!');
             router.back();
         } catch (error: any) {
-            Alert.alert('Error', error.message);
+            console.error('Error creating post:', error);
+            Alert.alert('Error', error.message || 'Failed to create post');
         } finally {
             setUploading(false);
         }

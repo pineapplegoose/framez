@@ -1,3 +1,4 @@
+'use client';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
@@ -19,6 +20,7 @@ function RootLayoutNav() {
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);
+
 
   if (loading) {
     return <LoadingScreen />;

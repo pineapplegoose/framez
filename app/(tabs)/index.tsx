@@ -5,13 +5,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
-  RefreshControl
+  RefreshControl,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
 import PostCard from '../../components/PostCard';
+import { useSupabase } from '@/config/useSupabase';
 
 interface Post {
   id: string;
@@ -23,43 +23,115 @@ interface Post {
 }
 
 export default function HomeFeed() {
+  const supabase = useSupabase();
   const [posts, setPosts] = useState<Post[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+  const fetchPosts = async () => {
+    if (!supabase) {
+      console.log('Supabase not initialized');
+      setLoading(false);
+      return;
+    }
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData: Post[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        postsData.push({
-          id: doc.id,
-          authorName: data.authorName,
-          authorId: data.authorId,
-          text: data.text || '',
-          imageUrl: data.imageUrl,
-          timestamp: data.createdAt
-        });
+    try {
+      console.log('Fetching posts...');
+
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('Posts data:', data);
+      console.log('Posts error:', error);
+
+      if (error) {
+        console.error('Error fetching posts:', error);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      if (!data) {
+        console.log('No data returned');
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      console.log('Number of posts:', data.length);
+
+      const postsData: Post[] = data.map((post) => {
+        console.log('Mapping post:', post);
+        return {
+          id: post.id,
+          authorName: post.author_name || 'Unknown',
+          authorId: post.author_id,
+          text: post.text || '',
+          imageUrl: post.image_url,
+          timestamp: post.created_at,
+        };
       });
-      setPosts(postsData);
-      setRefreshing(false);
-    });
 
-    return () => unsubscribe();
-  }, []);
+      console.log('Mapped posts:', postsData);
+      setPosts(postsData);
+    } catch (err) {
+      console.error('Exception fetching posts:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+
+    if (!supabase) {
+      return;
+    }
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('posts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'posts' },
+        (payload) => {
+          console.log('Real-time update:', payload);
+          fetchPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]); // Add supabase as dependency
 
   const onRefresh = () => {
     setRefreshing(true);
+    fetchPosts();
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#E1306C" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PostCard post={item} />}
+        renderItem={({ item }) => {
+          console.log('Rendering post:', item);
+          return <PostCard post={item} />;
+        }}
         contentContainerStyle={posts.length === 0 ? styles.emptyContainer : undefined}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -91,6 +163,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fafafa'
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   emptyContainer: {
     flex: 1,
@@ -126,6 +202,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 4
+    shadowRadius: 3.84,
   }
 });

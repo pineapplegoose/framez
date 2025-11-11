@@ -1,17 +1,11 @@
+'use client'
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    User,
-    updateProfile
-} from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import { Session, User } from '@supabase/supabase-js';
+import supabase from "../config/supabase"
 
 interface AuthContextType {
     user: User | null;
+    session: Session | null;
     loading: boolean;
     signUp: (email: string, password: string, displayName: string) => Promise<void>;
     signIn: (email: string, password: string) => Promise<void>;
@@ -23,46 +17,93 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+
     const [user, setUser] = useState<User | null>(null);
+    const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
+        if (!supabase) return
+
+        // Check if the user is already signed in
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setUser(session?.user ?? null);
             setLoading(false);
         });
 
-        return unsubscribe;
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const signUp = async (email: string, password: string, displayName: string) => {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        if (!supabase) {
+            return
+        }
 
-        await updateProfile(userCredential.user, { displayName });
-
-        // Create user document in Firestore
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
-            uid: userCredential.user.uid,
-            email: email,
-            displayName: displayName,
-            createdAt: new Date().toISOString()
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    display_name: displayName,
+                },
+            },
         });
+
+        if (error) throw error;
+
+        // Create user profile in database
+        if (data.user) {
+            const { error: profileError } = await supabase
+                .from('users')
+                .insert([
+                    {
+                        id: data.user.id,
+                        email: email,
+                        display_name: displayName,
+                        created_at: new Date().toISOString(),
+                    },
+                ]);
+
+            if (profileError) throw profileError;
+        }
     };
 
     const signIn = async (email: string, password: string) => {
-        await signInWithEmailAndPassword(auth, email, password);
+        if (!supabase) {
+            return
+        }
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw error;
     };
 
     const logout = async () => {
-        await signOut(auth);
+        if (!supabase) {
+            return
+        }
+
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
     };
 
     const value = {
         user,
+        session,
         loading,
         signUp,
         signIn,
-        logout
+        logout,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
