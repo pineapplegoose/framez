@@ -1,50 +1,306 @@
-# Welcome to your Expo app 👋
+# Framez - Social Media App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile social media application built with React Native (Expo) and Supabase, allowing users to share posts with text and images.
 
-## Get started
+## Features
 
-1. Install dependencies
+✅ **User Authentication**
+- Email/password registration and login
+- Persistent sessions (stay logged in)
+- Secure Supabase Authentication
 
-   ```bash
-   npm install
-   ```
+✅ **Posts**
+- Create posts with text and/or images
+- Real-time feed updates
+- Chronological post ordering
+- Image upload to Supabase Storage
 
-2. Start the app
+✅ **User Profile**
+- Display user information
+- View all user's posts
+- Post count statistics
+- Logout functionality
 
-   ```bash
-   npx expo start
-   ```
+## Tech Stack
 
-In the output, you'll find options to open the app in a
+- **Framework**: React Native with Expo
+- **Routing**: Expo Router (file-based)
+- **Backend**: Supabase
+  - Authentication
+  - PostgreSQL Database
+  - Storage (images)
+- **Language**: TypeScript
+- **UI**: React Native components, Ionicons
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Setup Instructions
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Prerequisites
 
-## Get a fresh project
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI: `npm install -g expo-cli`
+- iOS Simulator (Mac) or Android Studio (for emulator)
+- Expo Go app on your physical device (optional)
 
-When you're ready, run:
+### Supabase Setup
 
-```bash
-npm run reset-project
+1. **Create a Supabase Project**
+   - Go to [supabase.com](https://supabase.com)
+   - Click "New Project"
+   - Fill in project details
+   - Wait for database to provision (~2 minutes)
+
+2. **Get Your API Credentials**
+   - Go to Project Settings → API
+   - Copy your `Project URL` (SUPABASE_URL)
+   - Copy your `anon/public` key (SUPABASE_ANON_KEY)
+
+3. **Create Database Tables**
+
+Run this SQL in the Supabase SQL Editor:
+
+```sql
+-- Create users table
+CREATE TABLE users (
+  id UUID REFERENCES auth.users PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  display_name TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create posts table
+CREATE TABLE posts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  author_id UUID REFERENCES auth.users NOT NULL,
+  author_name TEXT NOT NULL,
+  text TEXT,
+  image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+
+-- Users policies
+CREATE POLICY "Users can view all profiles"
+  ON users FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can update own profile"
+  ON users FOR UPDATE
+  USING (auth.uid() = id);
+
+-- Posts policies
+CREATE POLICY "Anyone can view posts"
+  ON posts FOR SELECT
+  USING (true);
+
+CREATE POLICY "Authenticated users can create posts"
+  ON posts FOR INSERT
+  WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Users can update own posts"
+  ON posts FOR UPDATE
+  USING (auth.uid() = author_id);
+
+CREATE POLICY "Users can delete own posts"
+  ON posts FOR DELETE
+  USING (auth.uid() = author_id);
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+4. **Create Storage Bucket**
 
-## Learn more
+Run this SQL:
 
-To learn more about developing your project with Expo, look at the following resources:
+```sql
+-- Create storage bucket for post images
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('post-images', 'post-images', true);
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+-- Set up storage policies
+CREATE POLICY "Anyone can view images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'post-images');
 
-## Join the community
+CREATE POLICY "Authenticated users can upload images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'post-images' 
+    AND auth.role() = 'authenticated'
+  );
+```
 
-Join our community of developers creating universal apps.
+5. **Update Config File**
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Edit `config/supabase.ts` with your credentials:
+
+```typescript
+const supabaseUrl = 'https://xxxxx.supabase.co'; // Your Project URL
+const supabaseAnonKey = 'your-anon-key-here'; // Your anon/public key
+```
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <your-repo-url>
+cd framez
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Update Supabase config in `config/supabase.ts`
+
+4. Start the development server:
+```bash
+npx expo start
+```
+
+5. Run on device/emulator:
+   - Press `i` for iOS simulator
+   - Press `a` for Android emulator
+   - Scan QR code with Expo Go app on your phone
+
+## Project Structure
+
+```
+framez/
+├── app/
+│   ├── (auth)/           # Authentication screens
+│   │   ├── login.tsx
+│   │   └── register.tsx
+│   ├── (tabs)/           # Main app tabs
+│   │   ├── _layout.tsx
+│   │   ├── index.tsx     # Home feed
+│   │   └── profile.tsx
+│   ├── _layout.tsx       # Root layout with auth routing
+│   └── create-post.tsx   # Create post modal
+├── components/
+│   ├── PostCard.tsx      # Post display component
+│   └── LoadingScreen.tsx
+├── config/
+│   └── supabase.ts       # Supabase configuration
+└── contexts/
+    └── AuthContext.tsx   # Authentication state management
+```
+
+## Database Schema
+
+### users
+- `id` (UUID, Primary Key)
+- `email` (TEXT, Unique)
+- `display_name` (TEXT)
+- `created_at` (TIMESTAMP)
+
+### posts
+- `id` (UUID, Primary Key)
+- `author_id` (UUID, Foreign Key → users.id)
+- `author_name` (TEXT)
+- `text` (TEXT, Optional)
+- `image_url` (TEXT, Optional)
+- `created_at` (TIMESTAMP)
+
+## Features Implemented
+
+### Authentication Flow
+- Protected routes (redirects to login if not authenticated)
+- Session persistence using AsyncStorage
+- Auto-redirect after login/logout
+- Supabase Auth with Row Level Security
+
+### Post Management
+- Create posts with text (up to 500 characters)
+- Upload images from device gallery
+- Image compression and optimization
+- Real-time feed updates using Supabase Realtime
+- Automatic public URL generation for images
+
+### User Interface
+- Instagram-inspired design
+- Clean, minimal aesthetic
+- Responsive layouts
+- Loading states and error handling
+- Pull-to-refresh on feed
+- Empty states for no content
+
+## Testing
+
+### On iOS Simulator
+```bash
+npx expo start --ios
+```
+
+### On Android Emulator
+```bash
+npx expo start --android
+```
+
+### On Physical Device
+1. Install Expo Go from App Store/Play Store
+2. Run `npx expo start`
+3. Scan QR code with camera (iOS) or Expo Go (Android)
+
+## Deployment to Appetize.io
+
+1. Build the app:
+```bash
+eas build --platform android --profile preview
+```
+
+2. Download the APK file
+
+3. Upload to [appetize.io](https://appetize.io/):
+   - Sign up for account
+   - Upload APK
+   - Get public link
+
+## Known Issues & Solutions
+
+- **Images not loading**: Check Supabase Storage bucket is public
+- **Auth not persisting**: Ensure AsyncStorage is properly configured
+- **Realtime not working**: Check if Realtime is enabled in Supabase project settings
+
+## Supabase vs Firebase
+
+**Why Supabase?**
+- ✅ No credit card required for free tier
+- ✅ Open source
+- ✅ PostgreSQL database (more powerful)
+- ✅ Built-in Row Level Security
+- ✅ Real-time subscriptions included
+- ✅ RESTful API auto-generated
+
+## Future Enhancements
+
+- [ ] Like and comment functionality
+- [ ] Follow/unfollow users
+- [ ] User search
+- [ ] Push notifications
+- [ ] Direct messaging
+- [ ] Profile picture upload
+- [ ] Post editing and deletion
+- [ ] Image filters
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+## License
+
+MIT License
+
+## Contact
+
+For questions or support, please open an issue in the repository.
+
+---
+
+Built with ❤️ using React Native & Supabase
