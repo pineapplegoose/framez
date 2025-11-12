@@ -32,8 +32,9 @@ const customStorage = {
 }
 
 const createSupabaseClient = () => {
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY
+  const supabaseUrl = "https://fzfpxunnnbtqvlvqmalg.supabase.co"
+  const supabaseKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZnB4dW5ubmJ0cXZsdnFtYWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDUyNjMsImV4cCI6MjA3ODEyMTI2M30.C109SxIWlZhvy-k27zRyCC3qy_ckGrsTd11Z1XCou6s"
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Missing Supabase environment variables")
