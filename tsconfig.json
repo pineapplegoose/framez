@@ -11,6 +11,8 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "async-storage-web.js"
+    "async-storage-web.js",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
   ]
 }
