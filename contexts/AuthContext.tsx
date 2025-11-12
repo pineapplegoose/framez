@@ -55,22 +55,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             },
         });
 
-        if (error) throw error;
-
-        if (data.user) {
-            const { error: profileError } = await supabase
-                .from('users')
-                .insert([
-                    {
-                        id: data.user.id,
-                        email: email,
-                        display_name: displayName,
-                        created_at: new Date().toISOString(),
-                    },
-                ]);
-
-            if (profileError) throw profileError;
+        if (error) {
+            alert(error.message);
+            return;
         }
+
+        alert('Account created! Please check your email.');
     };
 
     const signIn = async (email: string, password: string) => {
