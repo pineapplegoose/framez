@@ -25,14 +25,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (!supabase) return
 
-        // Check if the user is already signed in
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
             setLoading(false);
         });
 
-        // Listen for auth changes
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
@@ -58,7 +57,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (error) throw error;
 
-        // Create user profile in database
         if (data.user) {
             const { error: profileError } = await supabase
                 .from('users')

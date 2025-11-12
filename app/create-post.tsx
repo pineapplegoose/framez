@@ -48,9 +48,7 @@ export default function CreatePostScreen() {
         const fileName = `${user?.id}_${Date.now()}.jpg`;
         const filePath = `posts/${fileName}`;
 
-        // Handle web platform differently
         if (Platform.OS === 'web') {
-            // Fetch the blob from the URI
             const response = await fetch(uri);
             const blob = await response.blob();
 
@@ -65,7 +63,7 @@ export default function CreatePostScreen() {
                 throw error;
             }
         } else {
-            // For native platforms, use the legacy API
+
             const { readAsStringAsync } = require('expo-file-system/legacy');
 
             const base64 = await readAsStringAsync(uri, {
@@ -132,7 +130,7 @@ export default function CreatePostScreen() {
 
             console.log('Post created successfully:', data);
             Alert.alert('Success', 'Post created!');
-            router.back();
+            router.push('/');
         } catch (error: any) {
             console.error('Error creating post:', error);
             Alert.alert('Error', error.message || 'Failed to create post');

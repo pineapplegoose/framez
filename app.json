@@ -3,52 +3,94 @@
     "name": "framez",
     "slug": "framez",
     "extra": {
-      "supabaseUrl": "https://fzfpxunnnbtqvlvqmalg.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6ZnB4dW5ubmJ0cXZsdnFtYWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDUyNjMsImV4cCI6MjA3ODEyMTI2M30.C109SxIWlZhvy-k27zRyCC3qy_ckGrsTd11Z1XCou6s"
-    },
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "framez",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.framez"
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "9773370e-01c1-4862-b4e0-c4e2ba4d74bc"
+      },
+      "version": "1.0.0",
+      "orientation": "portrait",
+      "icon": "./assets/images/logo-framez.png",
+      "scheme": "framez",
+      "userInterfaceStyle": "automatic",
+      "newArchEnabled": true,
+      "ios": {
+        "supportsTablet": true,
+        "bundleIdentifier": "com.anonymous.framez",
+        "buildNumber": "1.0.0",
+        "icon": "./assets/images/logo-framez.png"
+      },
+      "android": {
+        "adaptiveIcon": {
+          "backgroundColor": "#FFFFFF",
+          "foregroundImage": "./assets/images/logo-framez.png",
+          "backgroundImage": "./assets/images/logo-framez.png",
+          "monochromeImage": "./assets/images/logo-framez.png"
+        },
+        "edgeToEdgeEnabled": true,
+        "predictiveBackGestureEnabled": false,
+        "package": "com.anonymous.framez"
+      },
+      "web": {
+        "output": "static",
+        "favicon": "./assets/images/logo-framez.png"
+      },
+      "plugins": [
+        "expo-router",
+        [
+          "expo-splash-screen",
+          {
+            "image": "./assets/images/logo-framez.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "backgroundColor": "#ffffff",
+            "dark": {
+              "backgroundColor": "#000000"
+            }
+          }
+        ],
+        [
+          "expo-image-picker",
+          {
+            "photosPermission": "The app needs access to your photos to let you share images."
+          }
+        ],
+        "expo-secure-store",
+        "expo-router",
+        [
+          "expo-splash-screen",
+          {
+            "image": "./assets/images/logo-framez.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "backgroundColor": "#ffffff",
+            "dark": {
+              "backgroundColor": "#000000"
+            }
+          }
+        ],
+        [
+          "expo-image-picker",
+          {
+            "photosPermission": "The app needs access to your photos to let you share images."
+          }
+        ],
+        "expo-secure-store"
+      ],
+      "experiments": {
+        "typedRoutes": true,
+        "reactCompiler": true
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.pineapplegoose.framez"
     },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
-        }
-      ],
-      "expo-secure-store"
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+    "ios": {
+      "bundleIdentifier": "com.pineapplegoose.framez",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }

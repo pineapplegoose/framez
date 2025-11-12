@@ -7,10 +7,13 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
-    Alert
+    Alert,
+    Image,
+    Modal
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
     const [displayName, setDisplayName] = useState('');
@@ -18,6 +21,7 @@ export default function RegisterScreen() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { signUp } = useAuth();
+    const [visible, setVisible] = useState(false);
     const router = useRouter();
 
     const handleRegister = async () => {
@@ -34,10 +38,19 @@ export default function RegisterScreen() {
         setLoading(true);
         try {
             await signUp(email, password, displayName);
+            setVisible(true);
+            const timer = setTimeout(() => {
+                setVisible(false);
+                router.push('/(auth)/login');
+            }, 3000);
+
+            return () => clearTimeout(timer);
+
         } catch (error: any) {
             Alert.alert('Registration Failed', error.message);
         } finally {
             setLoading(false);
+            setVisible(false);
         }
     };
 
@@ -47,7 +60,10 @@ export default function RegisterScreen() {
             style={styles.container}
         >
             <View style={styles.content}>
-                <Text style={styles.logo}>Framez</Text>
+                <Image
+                    source={require('../../assets/images/logo-framez.png')}
+                    style={styles.logo}
+                />
                 <Text style={styles.subtitle}>Create your account</Text>
 
                 <View style={styles.form}>
@@ -96,6 +112,13 @@ export default function RegisterScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+            <Modal visible={visible} transparent onRequestClose={() => setVisible(false)} style={styles.popup}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalText}>A confirmation email has been sent to your email address.</Text>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -111,10 +134,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30
     },
     logo: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#E1306C',
+        width: 200,
+        height: 200,
+        alignSelf: 'center',
         marginBottom: 10
     },
     subtitle: {
@@ -163,5 +185,35 @@ const styles = StyleSheet.create({
         color: '#E1306C',
         fontSize: 14,
         fontWeight: '600'
-    }
+    },
+    popup: {
+        display: 'none',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalContent: {
+        width: 300,
+        padding: 20,
+        backgroundColor: "white",
+        borderRadius: 10,
+        alignItems: "center",
+    },
+    modalText: {
+        fontSize: 18,
+        marginBottom: 20,
+        color: '#E1306C',
+        fontWeight: '600',
+        marginLeft: 8,
+        textAlign: 'center'
+    },
 });

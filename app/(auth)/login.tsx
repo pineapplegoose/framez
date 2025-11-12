@@ -7,7 +7,8 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
-    Alert
+    Alert,
+    Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -41,7 +42,10 @@ export default function LoginScreen() {
             style={styles.container}
         >
             <View style={styles.content}>
-                <Text style={styles.logo}>Framez</Text>
+                <Image
+                    source={require('../../assets/images/logo-framez.png')}
+                    style={styles.logo}
+                />
                 <Text style={styles.subtitle}>Share your moments</Text>
 
                 <View style={styles.form}>
@@ -97,11 +101,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30
     },
     logo: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#E1306C',
-        marginBottom: 10
+        width: 200,
+        height: 200,
+        alignSelf: 'center',
+        marginBottom: -20,
     },
     subtitle: {
         fontSize: 16,

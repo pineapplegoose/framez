@@ -3,6 +3,16 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
+import { Image, StyleSheet } from 'react-native';
+
+function LogoTitle() {
+  return (
+    <Image
+      source={require('../assets/images/logo-framez.png')}
+      style={styles.logo}
+    />
+  );
+}
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -37,7 +47,7 @@ function RootLayoutNav() {
           title: 'Create Post',
           headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#262626',
-          presentation: 'modal'
+          presentation: 'modal',
         }}
       />
     </Stack>
@@ -51,3 +61,10 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  logo: {
+    width: 150,
+    height: 150,
+  },
+});

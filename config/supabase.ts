@@ -3,7 +3,6 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { Platform } from "react-native"
 
-// Check if we're in a browser environment
 const isBrowser = typeof window !== "undefined"
 
 const customStorage = {
@@ -50,7 +49,6 @@ const createSupabaseClient = () => {
   })
 }
 
-// Create client lazily only when accessed
 let supabaseInstance: SupabaseClient | null = null
 
 export const getSupabase = () => {
@@ -65,7 +63,6 @@ export const getSupabase = () => {
   return supabaseInstance
 }
 
-// For direct usage (will be null during SSR)
 export const supabase = isBrowser ? getSupabase() : null
 
 export default supabase

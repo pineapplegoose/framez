@@ -92,7 +92,6 @@ export default function HomeFeed() {
       return;
     }
 
-    // Subscribe to real-time changes
     const channel = supabase
       .channel('posts')
       .on(
@@ -108,7 +107,7 @@ export default function HomeFeed() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase]); // Add supabase as dependency
+  }, [supabase]);
 
   const onRefresh = () => {
     setRefreshing(true);

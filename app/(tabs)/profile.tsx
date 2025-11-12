@@ -5,7 +5,8 @@ import {
     FlatList,
     StyleSheet,
     TouchableOpacity,
-    Alert
+    Alert,
+    Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import supabase from "../../config/supabase"
@@ -26,6 +27,7 @@ interface Post {
 
 export default function ProfileScreen() {
     const [posts, setPosts] = useState<Post[]>([]);
+    const [visible, setVisible] = useState(false);
     const { user, logout } = useAuth();
     const displayName = user?.user_metadata?.display_name || 'User';
 
@@ -65,7 +67,6 @@ export default function ProfileScreen() {
             return
         }
 
-        // Subscribe to real-time changes for user's posts
         const channel = supabase
             .channel('user-posts')
             .on(
@@ -91,25 +92,15 @@ export default function ProfileScreen() {
         };
     }, [user]);
 
-    const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await logout();
-                        } catch (error: any) {
-                            Alert.alert('Error', error.message);
-                        }
-                    }
-                }
-            ]
-        );
+    const handleLogout = async () => {
+
+
+        try {
+            await logout();
+        } catch (error: any) {
+            Alert.alert('Error', error.message);
+        }
+
     };
 
     return (
@@ -135,7 +126,7 @@ export default function ProfileScreen() {
                                 </View>
                             </View>
 
-                            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                            <TouchableOpacity style={styles.logoutButton} onPress={() => setVisible(true)}>
                                 <Ionicons name="log-out-outline" size={20} color="#E1306C" />
                                 <Text style={styles.logoutText}>Logout</Text>
                             </TouchableOpacity>
@@ -155,6 +146,22 @@ export default function ProfileScreen() {
                     </View>
                 }
             />
+            <Modal visible={visible} transparent onRequestClose={() => setVisible(false)} style={styles.popup}>
+
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <TouchableOpacity onPress={() => setVisible(false)} style={styles.closeButton}>
+                            <Ionicons name="close-outline" size={25} color="#E1306C" />
+                        </TouchableOpacity>
+                        <Text style={styles.modalText}>Are you sure you want to logout?</Text>
+                        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                            <Text style={styles.logoutText}>Logout</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+
+            </Modal>
         </View>
     );
 }
@@ -226,6 +233,12 @@ const styles = StyleSheet.create({
         borderColor: '#E1306C',
         borderRadius: 6
     },
+    closeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-end',
+        marginBottom: 20,
+    },
     logoutText: {
         color: '#E1306C',
         fontSize: 14,
@@ -254,5 +267,35 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#999',
         marginTop: 12
-    }
+    },
+    popup: {
+        display: 'none',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalContent: {
+        width: 300,
+        padding: 20,
+        backgroundColor: "white",
+        borderRadius: 10,
+        alignItems: "center",
+    },
+    modalText: {
+        fontSize: 18,
+        marginBottom: 20,
+        color: '#E1306C',
+        fontWeight: '600',
+        marginLeft: 8,
+        textAlign: 'center'
+    },
 });

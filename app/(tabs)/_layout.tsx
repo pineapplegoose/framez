@@ -1,5 +1,15 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image, StyleSheet } from 'react-native';
+
+function LogoTitle() {
+  return (
+    <Image
+      source={require('../../assets/images/logo-framez.png')}
+      style={styles.logo}
+    />
+  );
+}
 
 export default function TabsLayout() {
   return (
@@ -31,23 +41,33 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Framez',
-          tabBarLabel: 'Home',
+          title: '',
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
-          )
+          ),
+          headerTitle: () => <LogoTitle />,
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarLabel: 'Profile',
+          title: '',
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
-          )
+          ),
+          headerTitle: () => <LogoTitle />,
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  logo: {
+    width: 150,
+    height: 150,
+  },
+});
